@@ -233,6 +233,29 @@ def load_images(x,y,input_shape,dataset_path):
         output[i] = img
     output = output.astype(np.float32)/255
     return output 
+def load_all_dataset(input_shape,dataset_path):
+    labels = {"cat":0,"dog":1}
+    X = []
+    y = []
+
+    for label_dir in os.listdir(dataset_path):
+        for img_file in os.listdir(os.path.join(dataset_path,label_dir)):
+            img = cv2.imread(os.path.join(dataset_dir,label_dir,img_file))
+            if not img is None:
+                if len(img.shape)>2:
+                    img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+                img = cv2.resize(img,(input_shape[0],input_shape[1]))
+                X+=[img]
+                y.append(labels[label_dir.lower()])
+    x_train,x_test, y_train,y_test = train_test_split(X,y)
+    x_train = np.array(x_train)
+    x_test = np.array(x_test)
+
+    y_train = np.eye(2)[y_train]
+    y_test = np.eye(2)[y_test]
+    x_train = x_train.reshape(-1,*input_shape)
+    x_test = x_test.reshape(-1,*input_shape)
+    return x_train,y_train, x_test,y_test
 
 def load_dataset(input_shape,dataset_path):
     labels = {"cat":0,"dog":1}
@@ -253,6 +276,14 @@ def load_dataset(input_shape,dataset_path):
 def generate_indexes(length):
     indexes = range(length)
     return shuffle(indexes)
+
+def generator2(x_train,y_train,batch_size=32):
+    while True:
+        indexes = generate_indexes(len(x_train))
+        print len(x_train)-batch_size
+        for i in range(0,(len(x_train)-batch_size),batch_size):
+            current_indexes = indexes[i:i+batch_size]
+            yield x_train[current_indexes],y_train[current_indexes]
 
 def generator(x_train,y_train,input_shape,dataset_path,batch_size=32):
 
@@ -304,15 +335,22 @@ if __name__ == "__main__":
     #     os.makedirs(args.save_dir)
     input_shape = (48,48,1)
     model = CapsNet(input_shape,2,3)
-    model.compile(loss="categorical_crossentropy",optimizer=keras.optimizers.Adam(1e-4),metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy",optimizer=keras.optimizers.Adam(1e-5),metrics=['accuracy'])
     dataset_dir = "/home/mtk/datasets/kagglecatsanddogs_3367a/PetImages"
-    x_train,y_train,x_test, y_test = load_dataset(input_shape, dataset_dir)
-    y_test = np.eye(2)[y_test]
+    # x_train,y_train,x_test, y_test = load_dataset(input_shape, dataset_dir)
+    x_train,y_train,x_test, y_test = load_all_dataset(input_shape, dataset_dir)
+    # y_test = np.eye(2)[y_test]
     print "x_train", x_train.shape
     print "x_test", x_test.shape
     print "y_train", y_train.shape
     print "y_test", y_test.shape
-    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir, 32),
+    # model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir, 32),
+    #                     steps_per_epoch=200,
+    #                     epochs=30,
+    #                     validation_data=[x_test, y_test])
+    x_train = x_train.astype(np.float32)/255
+    x_test = x_test.astype(np.float32)/255
+    model.fit_generator(generator=generator2(x_train, y_train, 32),
                         steps_per_epoch=200,
                         epochs=30,
                         validation_data=[x_test, y_test])
