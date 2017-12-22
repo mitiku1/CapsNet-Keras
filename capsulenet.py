@@ -333,9 +333,9 @@ if __name__ == "__main__":
 
     # if not os.path.exists(args.save_dir):
     #     os.makedirs(args.save_dir)
-    input_shape = (48,48,1)
+    input_shape = (28,28,1)
     model = CapsNet(input_shape,2,3)
-    model.compile(loss="categorical_crossentropy",optimizer=keras.optimizers.Adam(1e-5),metrics=['accuracy'])
+    model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(1e-5),metrics=['accuracy'])
     dataset_dir = "/home/mtk/datasets/kagglecatsanddogs_3367a/PetImages"
     # x_train,y_train,x_test, y_test = load_dataset(input_shape, dataset_dir)
     x_train,y_train,x_test, y_test = load_all_dataset(input_shape, dataset_dir)
