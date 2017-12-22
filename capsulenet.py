@@ -122,7 +122,7 @@ def load_images(x,y,input_shape,dataset_path):
         img = img.reshape(input_shape)
     
         output[i] = img
-    output = output.astype(np.float32)/255
+    output = output.astype(np.float32)
     return output 
 def load_all_dataset(input_shape,dataset_path):
     labels = {"cat":0,"dog":1}
@@ -222,9 +222,9 @@ if __name__ == "__main__":
 
     # if not os.path.exists(args.save_dir):
     #     os.makedirs(args.save_dir)
-    input_shape = (28,28,1)
+    input_shape = (48,48,1)
     model = CapsNet(input_shape,2,3)
-    model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(1e-3),metrics=['accuracy'])
+    model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(1e-4),metrics=['accuracy'])
     dataset_dir = "/home/mtk/datasets/kagglecatsanddogs_3367a/PetImages"
     # x_train,y_train,x_test, y_test = load_dataset(input_shape, dataset_dir)
     x_train,y_train,x_test, y_test = load_all_dataset(input_shape, dataset_dir)
@@ -243,6 +243,9 @@ if __name__ == "__main__":
                         steps_per_epoch=200,
                         epochs=30,
                         validation_data=[x_test, y_test])
-    model.save_weights("result/dog-cats.h5")
+    model.save_weights("result/dog-cats48x48.h5")
+    model_json = model.to_json()
+    with open("result/dog-cats48x48.json","w+") as f0:
+        f0.write(model_json)
     
 
