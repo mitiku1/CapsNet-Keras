@@ -24,7 +24,8 @@ class Length(layers.Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape[:-1]
-
+    def get_config(self):
+        return super(Length, self).get_config()
 
 class Mask(layers.Layer):
     """
@@ -56,7 +57,8 @@ class Mask(layers.Layer):
         # masked.shape=[None, num_capsule * dim_capsule]
         masked = K.batch_flatten(inputs * K.expand_dims(mask, -1))
         return masked
-
+    def get_config(self):
+        return super(Mask, self).get_config()
     def compute_output_shape(self, input_shape):
         if type(input_shape[0]) is tuple:  # true label provided
             return tuple([None, input_shape[0][1] * input_shape[0][2]])
@@ -153,6 +155,11 @@ class CapsuleLayer(layers.Layer):
         # End: Routing algorithm -----------------------------------------------------------------------#
 
         return outputs
+    # def get_config(self):
+    #     configs = {"num_capsule", self.num_capsule,"dim_capsule", self.dim_capsule,"routings", self.routings}}
+        
+    #     base_config = super(CapsuleLayer, self).get_config()
+    #     return dict(list(base_config.items()) + list(configs.items()))
 
     def compute_output_shape(self, input_shape):
         return tuple([None, self.num_capsule, self.dim_capsule])
