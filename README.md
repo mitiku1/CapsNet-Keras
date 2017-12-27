@@ -22,7 +22,7 @@ cd capsnet-keras
 
 **Step 3. Train a CapsNet on MNIST**  
 
-Training with default settings:
+Training 
 ```
 python capsulenet.py --dataset dataset-directory --epochs epochs --batch_size  batch_size
 ```
