@@ -1,20 +1,5 @@
-"""
-Keras implementation of CapsNet in Hinton's paper Dynamic Routing Between Capsules.
-The current version maybe only works for TensorFlow backend. Actually it will be straightforward to re-write to TF code.
-Adopting to other backends should be easy, but I have not tested this. 
 
-Usage:
-       python capsulenet.py
-       python capsulenet.py --epochs 50
-       python capsulenet.py --epochs 50 --routings 3
-       ... ...
-       
-Result:
-    Validation accuracy > 99.5% after 20 epochs. Converge to 99.66% after 50 epochs.
-    About 110 seconds per epoch on a single GTX1070 GPU card
-    
-Author: Xifeng Guo, E-mail: `guoxifeng1990@163.com`, Github: `https://github.com/XifengGuo/CapsNet-Keras`
-"""
+from __future__ import print_function
 
 import numpy as np
 from keras import layers, models, optimizers
@@ -30,7 +15,6 @@ import os
 import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
-from __future__ import print_function
 
 
 K.set_image_data_format('channels_last')
@@ -117,7 +101,7 @@ def load_images(x,y,input_shape,dataset_path):
         except cv2.error as e:
             print("Error", os.path.join(dataset_path,class_to_label(y[i]),x[i]))       
         if img is None:
-            print(os.path.join(dataset_path,class_to_label(y[i]),x[i]))
+            print("Couldnot read image from ",os.path.join(dataset_path,class_to_label(y[i]),x[i]))
         if len(img.shape)>2:
             img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(input_shape[0],input_shape[1]))
@@ -160,7 +144,6 @@ def generator(x_train,y_train,input_shape,dataset_path,batch_size=32,augmentatio
 
     while True:
         indexes = generate_indexes(len(x_train))
-        print(len(x_train)-batch_size)
         for i in range(0,(len(x_train)-batch_size),batch_size):
             current_indexes = indexes[i:i+batch_size]
             if augmentation:
@@ -192,7 +175,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     input_shape = (48,48,1)
-    model = CapsNet(input_shape,7,3)
+    model = CapsNet(input_shape,7,4)
+    model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
     dataset_dir = args.dataset
     if not os.path.exists(dataset_dir):
