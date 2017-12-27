@@ -24,9 +24,9 @@ cd capsnet-keras
 
 Training 
 ```
-python capsulenet.py --dataset dataset-directory --epochs epochs --batch_size  batch_size
+python capsulenet.py --dataset dataset-directory --epochs epochs --batch_size  batch_size --lr learning-rate
 ```
-If --dataset argument is not given then it is assumed that the dataset is found inside folder ./dataset . 
+If --dataset argument is not given then it is assumed that the dataset is found inside folder ./dataset . Other arguments are optional. The default value are  epochs = 50, batch size = 100, and learning rate = 0.001 
 
 ### Dependancies
 

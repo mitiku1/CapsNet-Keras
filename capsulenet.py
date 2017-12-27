@@ -193,7 +193,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     input_shape = (48,48,1)
     model = CapsNet(input_shape,7,3)
-    model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(1e-4),metrics=['accuracy'])
+    model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
     dataset_dir = args.dataset
     if not os.path.exists(dataset_dir):
         print("dataset dir",dataset_dir, "does not exist");
@@ -201,9 +201,9 @@ if __name__ == "__main__":
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
-    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", 32),
-                        steps_per_epoch=200,
-                        epochs=30,
+    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
+                        steps_per_epoch=1000,
+                        epochs=args.epochs,
                         validation_data=[x_test, y_test])
     model.save_weights("result/ck48x48.h5")
     model_json = model.to_json()
