@@ -82,12 +82,12 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=8, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=256, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=64, kernel_size=3, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=4, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
-    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=8, routings=routings,
+    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=32, routings=routings,
                              name='outcaps')(primarycaps)
 
     # Layer 4: This is an auxiliary layer to replace each capsule with its length. Just to match the true label's shape.
