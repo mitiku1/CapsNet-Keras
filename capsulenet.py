@@ -49,12 +49,12 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=256, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=32, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=3, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
-    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=32, routings=routings,
+    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
                              name='outcaps')(primarycaps)
 
     # Layer 4: This is an auxiliary layer to replace each capsule with its length. Just to match the true label's shape.
@@ -101,7 +101,8 @@ def load_images(x,y,input_shape,dataset_path):
         except cv2.error as e:
             print("Error", os.path.join(dataset_path,class_to_label(y[i]),x[i]))       
         if img is None:
-            print("Couldnot read image from ",os.path.join(dataset_path,class_to_label(y[i]),x[i]))
+            # print("Couldnot read image from ",os.path.join(dataset_path,class_to_label(y[i]),x[i]))
+            continue
         if len(img.shape)>2:
             img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(input_shape[0],input_shape[1]))
@@ -185,11 +186,15 @@ if __name__ == "__main__":
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
+    checkpoint = callbacks.ModelCheckpoint('models/weights'+'-{epoch:02d}-acc-{val_acc:0.3f}.h5',
+                    save_best_only=True, save_weights_only=True, verbose=1)
+    checkpoint2 = callbacks.ModelCheckpoint("models/last_weight.h5")
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=1000,
+                        steps_per_epoch=200,
                         epochs=args.epochs,
+                        callbacks=[checkpoint1,checkpoint2],
                         validation_data=[x_test, y_test])
-    model.save_weights("result/ck48x48.h5")
+    model.save_weights("result/mc48x48.h5")
     model_json = model.to_json()
-    with open("result/ck48x48.json","w+") as f0:
+    with open("result/mc48x48.json","w+") as f0:
         f0.write(model_json)
