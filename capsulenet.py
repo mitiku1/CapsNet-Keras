@@ -15,6 +15,7 @@ import os
 import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
+from keras import callbacks
 
 
 K.set_image_data_format('channels_last')
@@ -36,6 +37,38 @@ datagenerator = ImageDataGenerator(rotation_range=0.3,
                         zoom_range=0.2,
 
                         )
+class CustomCallBack(callbacks.Callback):
+    
+    def __init__(self,**kargs):
+        callbacks.Callback.__init__(self,**kargs)
+        self.last_loss = 1000000000
+        self.last_accuracy = 0
+        self.current_model_number = 0;
+    # def on_train_begin(self,epoch, logs={}):
+    #     return
+ 
+    # def on_train_end(self, logs={}):
+    #     return
+ 
+    def on_epoch_begin(self,epoch, logs={}):
+        return
+ 
+    def on_epoch_end(self, epoch, logs={}):
+        current_loss = logs.get("val_loss")
+        current_accuracy  = logs.get("val_acc")
+        if (current_loss-self.last_loss) > 0.01:
+            current_weights_name = "weights"+str(self.current_model_number)+".h5"
+            print("loss improved from "+str(self.last_loss)+" to "+str(current_loss)+", Saving model to "+current_weights_name)
+            self.model.save_weights("models/"+current_weights_name);
+            self.model.save_weights("models/last_weight.h5")
+            self.current_model_number+=1
+            self.last_loss = current_loss
+            self.last_accuracy = current_accuracy
+    def on_batch_begin(self, batch, logs={}):
+        return
+ 
+    def on_batch_end(self, batch, logs={}):
+        return
 
 def CapsNet(input_shape, n_class, routings):
     """
@@ -49,12 +82,12 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=256, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=8, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=3, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=64, kernel_size=3, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
-    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=32, routings=routings,
+    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=8, routings=routings,
                              name='outcaps')(primarycaps)
 
     # Layer 4: This is an auxiliary layer to replace each capsule with its length. Just to match the true label's shape.
@@ -162,7 +195,7 @@ if __name__ == "__main__":
     import os
     import argparse
     from keras.preprocessing.image import ImageDataGenerator
-    from keras import callbacks
+    
 
     # setting the hyper parameters
     parser = argparse.ArgumentParser(description="Capsule Network on MNIST.")
@@ -178,7 +211,15 @@ if __name__ == "__main__":
     model = CapsNet(input_shape,7,4)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
+    if os.path.exists("models/last_weight.h5"):
+        print("loading model from last checkpoint.")
+        model.load_weights("models/last_weight.h5")
+
     dataset_dir = args.dataset
+    # checkpoint = callbacks.ModelCheckpoint('models/weights'+'-{epoch:02d}-acc-{val_acc:0.3f}.h5',
+    #                 save_best_only=True, save_weights_only=True, verbose=1)
+    # checkpoint2 = callbacks.ModelCheckpoint("models/last_weight.h5")
+    customCheckPoint = CustomCallBack()
     if not os.path.exists(dataset_dir):
         print("dataset dir",dataset_dir, "does not exist");
     x_train,y_train,x_test, y_test = load_all_dataset(input_shape, dataset_dir)
@@ -186,10 +227,11 @@ if __name__ == "__main__":
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=1000,
+                        steps_per_epoch=10,
                         epochs=args.epochs,
+                        callbacks=[customCheckPoint],
                         validation_data=[x_test, y_test])
-    model.save_weights("result/ck48x48.h5")
+    model.save_weights("result/model.h5")
     model_json = model.to_json()
-    with open("result/ck48x48.json","w+") as f0:
+    with open("result/model.json","w+") as f0:
         f0.write(model_json)
