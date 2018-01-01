@@ -56,7 +56,7 @@ class CustomCallBack(callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
         current_loss = logs.get("val_loss")
         current_accuracy  = logs.get("val_acc")
-        if (current_loss-self.last_loss) > 0.01:
+        if (self.last_loss-current_loss) > 0.01:
             current_weights_name = "weights"+str(self.current_model_number)+".h5"
             print("loss improved from "+str(self.last_loss)+" to "+str(current_loss)+", Saving model to "+current_weights_name)
             self.model.save_weights("models/"+current_weights_name);
