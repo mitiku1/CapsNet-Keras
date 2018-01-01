@@ -82,10 +82,10 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=256, kernel_size=5, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=256, kernel_size=3, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=4, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=3, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
     outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=32, routings=routings,
                              name='outcaps')(primarycaps)
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     input_shape = (48,48,1)
-    model = CapsNet(input_shape,7,4)
+    model = CapsNet(input_shape,7,routings=5)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
     if os.path.exists("models/last_weight.h5"):
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=10,
+                        steps_per_epoch=1000,
                         epochs=args.epochs,
                         callbacks=[customCheckPoint],
                         validation_data=[x_test, y_test])
