@@ -101,12 +101,12 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=256, kernel_size=3, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=256, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=16, n_channels=64, kernel_size=3, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
-    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=32, routings=routings,
+    outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
                              name='outcaps')(primarycaps)
 
     # Layer 4: This is an auxiliary layer to replace each capsule with its length. Just to match the true label's shape.
@@ -115,6 +115,8 @@ def CapsNet(input_shape, n_class, routings):
 
     
     model = models.Model(inputs=x,outputs=out_caps)
+    model.summary()
+    exit()
     return model
 
 
@@ -229,7 +231,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     input_shape = (48,48,1)
-    model = CapsNet(input_shape,7,routings=5)
+    model = CapsNet(input_shape,7,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
     if os.path.exists("models/last_weight.h5"):
