@@ -115,8 +115,6 @@ def CapsNet(input_shape, n_class, routings):
 
     
     model = models.Model(inputs=x,outputs=out_caps)
-    model.summary()
-    exit()
     return model
 
 
