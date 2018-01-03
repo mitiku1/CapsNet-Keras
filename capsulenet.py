@@ -16,7 +16,8 @@ import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras import callbacks
-
+from datetime import datetime
+import json
 
 K.set_image_data_format('channels_last')
 
@@ -44,6 +45,7 @@ class CustomCallBack(callbacks.Callback):
         self.last_loss = 1000000000
         self.last_accuracy = 0
         self.current_model_number = 0;
+        self.epoch_number = 0
     # def on_train_begin(self,epoch, logs={}):
     #     return
  
@@ -52,8 +54,9 @@ class CustomCallBack(callbacks.Callback):
  
     def on_epoch_begin(self,epoch, logs={}):
         return
- 
+
     def on_epoch_end(self, epoch, logs={}):
+        self.epoch_number+=1
         current_loss = logs.get("val_loss")
         current_accuracy  = logs.get("val_acc")
         if (self.last_loss-current_loss) > 0.01:
@@ -64,6 +67,22 @@ class CustomCallBack(callbacks.Callback):
             self.current_model_number+=1
             self.last_loss = current_loss
             self.last_accuracy = current_accuracy
+            with open("log.txt","a+") as logfile:
+                logfile.write("________________________________________________________")
+                logfile.write("EPOCH    =")
+                logfile.write(str(epoch)+"\n")
+                logfile.write("VAL_ACC  =")
+                logfile.write(str(current_accuracy)+"\n")
+                logfile.write("VAL_LOSS =")
+                logfile.write(str(current_loss)+"\n")
+                logfile.write("ACCURACY =")
+                logfile.write(str(logs.get("acc"))+"\n")
+                logfile.write("LOSS     =")
+                logfile.write(str(logs.get("loss"))+"\n")
+                logfile.write("********************************************************")
+            with open("epoch_number.json","w+") as json_file:
+                data = {"epoch_number":self.epoch_number}
+                json.dump(data,json_file,indent=4)
     def on_batch_begin(self, batch, logs={}):
         return
  
@@ -204,7 +223,9 @@ if __name__ == "__main__":
     parser.add_argument('--lr', default=0.001, type=float,
                         help="Initial learning rate")
     parser.add_argument('--dataset', default="dataset", type=str,
-                        help="Initial learning rate")
+                        help="Path to dataset")
+    parser.add_argument('--resume', default=False, type=bool,
+                        help="Resume model from previous state")
     
     args = parser.parse_args()
     input_shape = (48,48,1)
@@ -226,9 +247,33 @@ if __name__ == "__main__":
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
+    REMAINING_EPOCHS = args.epochs
+    if (args.resume):
+        if os.path.exists("epoch_number.json"):
+            with open("epoch_number.json","r") as json_file:
+                try:
+                    data = json.load(json_file)
+                    customCheckPoint.epoch_number = data["epoch_number"]
+                    REMAINING_EPOCHS -= customCheckPoint.epoch_number
+                except:
+
+                    print ("unable to read epoch number from file. resuming epoch from 0.")
+
+                
+            print("resuming from previous epoch number:")
+            print("previous epoch number",customCheckPoint.epoch_number)
+            print("remaining epochs",REMAINING_EPOCHS)
+    if REMAINING_EPOCHS < 0:
+        REMAINING_EPOCHS =1
+    with open("log.txt","a+") as logfile:
+        str_date = datetime.now().strftime("%d, %b, %Y %H:%M:%S")
+        logfile.write("Starting to train model\n")
+        logfile.write(str_date+"\n")
+
+
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
                         steps_per_epoch=1000,
-                        epochs=args.epochs,
+                        epochs=REMAINING_EPOCHS,
                         callbacks=[customCheckPoint],
                         validation_data=[x_test, y_test])
     model.save_weights("result/model.h5")
