@@ -68,7 +68,7 @@ class CustomCallBack(callbacks.Callback):
             self.last_loss = current_loss
             self.last_accuracy = current_accuracy
             with open("log.txt","a+") as logfile:
-                logfile.write("________________________________________________________")
+                logfile.write("________________________________________________________\n")
                 logfile.write("EPOCH    =")
                 logfile.write(str(epoch)+"\n")
                 logfile.write("VAL_ACC  =")
@@ -79,7 +79,7 @@ class CustomCallBack(callbacks.Callback):
                 logfile.write(str(logs.get("acc"))+"\n")
                 logfile.write("LOSS     =")
                 logfile.write(str(logs.get("loss"))+"\n")
-                logfile.write("********************************************************")
+                logfile.write("********************************************************\n")
             with open("epoch_number.json","w+") as json_file:
                 data = {"epoch_number":self.epoch_number}
                 json.dump(data,json_file,indent=4)
