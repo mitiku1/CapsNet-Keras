@@ -187,6 +187,20 @@ def load_all_dataset(input_shape,dataset_path):
     x_test = X_test.reshape(-1,*input_shape)
     return X_train,y_train, x_test,y_test
 
+def load_dataset(input_shape,dataset_dir):
+    X = []
+    Y = []
+    for em_dir in os.listdir(dataset_dir):
+        for im_file in os.listdir(os.path.join(dataset_dir,em_dir)):
+            img = cv2.imread(os.path.join(dataset_dir,em_dir,im_file))
+            if not (img is None):
+                img = cv2.resize(img,(input_shape[0],input_shape[1]))
+                X+=[img]
+                Y+=[label_to_class(em_dir)]
+    x = np.array(X)
+    y = np.array(Y)
+    x = x.reshape((-1,input_shape[0],input_shape[1],input_shape[2])) 
+    return x,y
 
 def generate_indexes(length):
     indexes = range(length)
@@ -227,8 +241,9 @@ if __name__ == "__main__":
     parser.add_argument('--resume', default=False, type=bool,
                         help="Resume model from previous state")
     
+
     args = parser.parse_args()
-    input_shape = (48,48,1)
+    input_shape = (256,256,3)
     model = CapsNet(input_shape,7,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
@@ -243,10 +258,18 @@ if __name__ == "__main__":
     customCheckPoint = CustomCallBack()
     if not os.path.exists(dataset_dir):
         print("dataset dir",dataset_dir, "does not exist");
-    x_train,y_train,x_test, y_test = load_all_dataset(input_shape, dataset_dir)
-    x_train = np.array(x_train)
-    y_train = np.array(y_train)
+    x_train,y_train = load_dataset(input_shape, os.path.join(dataset_dir,"train"))
+    x_test,y_test = load_dataset(input_shape, os.path.join(dataset_dir,"test"))
+
+    x_train = x_train.astype(np.float32)/255
     x_test = x_test.astype(np.float32)/255
+
+    y_train = np.eye(7)[y_train]
+    y_test = np.eye(7)[y_test]
+    print ("x_train",x_train.shape)
+    print ("x_test",x_test.shape)
+    print ("y_train",y_train.shape)
+    print ("y_test",y_test.shape)
     REMAINING_EPOCHS = args.epochs
     if (args.resume):
         if os.path.exists("epoch_number.json"):
@@ -271,11 +294,12 @@ if __name__ == "__main__":
         logfile.write(str_date+"\n")
 
 
-    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=1000,
-                        epochs=REMAINING_EPOCHS,
-                        callbacks=[customCheckPoint],
-                        validation_data=[x_test, y_test])
+    # model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
+    #                     steps_per_epoch=1000,
+    #                     epochs=REMAINING_EPOCHS,
+    #                     callbacks=[customCheckPoint],
+    #                     validation_data=[x_test, y_test])
+    model.fit(x_train,y_train,batch_size = 32,epochs=10,callbacks=[customCheckPoint],validation_data=[x_test,y_test])
     model.save_weights("result/model.h5")
     model_json = model.to_json()
     with open("result/model.json","w+") as f0:
