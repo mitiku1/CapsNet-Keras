@@ -154,8 +154,8 @@ def load_images(x,y,input_shape,dataset_path):
             print("Error", os.path.join(dataset_path,class_to_label(y[i]),x[i]))       
         if img is None:
             print("Couldnot read image from ",os.path.join(dataset_path,class_to_label(y[i]),x[i]))
-        if len(img.shape)>2:
-            img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        # if len(img.shape)>2:
+        #     img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(input_shape[0],input_shape[1]))
         img = img.reshape(input_shape)
     
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Capsule Network on MNIST.")
     parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--batch_size', default=100, type=int)
-    parser.add_argument('--lr', default=0.001, type=float,
+    parser.add_argument('--lr', default=0.0001, type=float,
                         help="Initial learning rate")
     parser.add_argument('--dataset', default="dataset", type=str,
                         help="Path to dataset")
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                         help="Resume model from previous state")
     
     args = parser.parse_args()
-    input_shape = (48,48,1)
+    input_shape = (128,128,3)
     model = CapsNet(input_shape,7,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
