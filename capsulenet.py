@@ -101,10 +101,10 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=256, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=32, kernel_size=12, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=12, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
     outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
                              name='outcaps')(primarycaps)
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                         help="Resume model from previous state")
     
     args = parser.parse_args()
-    input_shape = (128,128,3)
+    input_shape = (96,96,3)
     model = CapsNet(input_shape,7,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
@@ -247,6 +247,10 @@ if __name__ == "__main__":
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
+    print(x_train.shape)
+    print(x_test.shape)
+    print(y_train.shape)
+    print (y_test.shape)
     REMAINING_EPOCHS = args.epochs
     if (args.resume):
         if os.path.exists("epoch_number.json"):
@@ -272,7 +276,7 @@ if __name__ == "__main__":
 
 
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=1000,
+                        steps_per_epoch=100,
                         epochs=REMAINING_EPOCHS,
                         callbacks=[customCheckPoint],
                         validation_data=[x_test, y_test])
