@@ -18,6 +18,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras import callbacks
 from datetime import datetime
 import json
+import pandas as pd
 
 K.set_image_data_format('channels_last')
 
@@ -101,10 +102,10 @@ def CapsNet(input_shape, n_class, routings):
     x = layers.Input(shape=input_shape)
 
     # Layer 1: Just a conventional Conv2D layer
-    conv1 = layers.Conv2D(filters=32, kernel_size=12, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    conv1 = layers.Conv2D(filters=32, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=12, strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
     # Layer 3: Capsule layer. Routing algorithm works here.
     outcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
                              name='outcaps')(primarycaps)
@@ -163,29 +164,33 @@ def load_images(x,y,input_shape,dataset_path):
     output = output.astype(np.float32)
     return output 
 def load_all_dataset(input_shape,dataset_path):
-    X_train = []
-    y_train = []
-    for label_dir in os.listdir(os.path.join(dataset_path,"train")):
-        for img_file in os.listdir(os.path.join(dataset_path,"train",label_dir)):
-            X_train+=[img_file]
-            y_train+=[label_to_class(label_dir)]
-    print("loading test images")
-    # X_train = load_images(X_train,y_train,input_shape,os.path.join(dataset_path,"train"))
+    train_df = pd.read_pickle(os.path.join(dataset_path,"train.pkl")).reset_index(drop=True)
+    test_df = pd.read_pickle(os.path.join(dataset_path,"test.pkl")).reset_index(drop=True)
+    Y_train = train_df["opened"].as_matrix()
+    Y_test = test_df["opened"].as_matrix()
 
-    X_test = []
-    y_test = []
-    for label_dir in os.listdir(os.path.join(dataset_path,"test")):
-        for img_file in os.listdir(os.path.join(dataset_path,"test",label_dir)):
-            X_test+=[img_file]
-            y_test +=[label_to_class(label_dir)]
-    X_test = load_images(X_test,y_test,input_shape,os.path.join(dataset_path,"test"))
+    X_train = np.zeros((len(train_df),48,48))
+    for index,row in train_df.iterrows():
+        img = cv2.imread(row["file_location"])
+        if img is None:
+            print ("cv2 error: Unable to read from ",row["file_location"])
+            continue
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        img = cv2.resize(img,(48,48))
+        X_train[index] = img
 
-    
-
-    y_test = np.eye(7)[y_test]
-
-    x_test = X_test.reshape(-1,*input_shape)
-    return X_train,y_train, x_test,y_test
+    X_test = np.zeros((len(test_df),48,48))
+    for index,row in test_df.iterrows():
+        img = cv2.imread(row["file_location"])
+        if img is None:
+            print ("cv2 error: Unable to read from ",row["file_location"])
+            continue
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        img = cv2.resize(img,(48,48))
+        X_test[index] = img
+    X_train = X_train.reshape(-1,48,48,1)
+    X_test = X_test.reshape(-1,48,48,1)
+    return X_train,Y_train, X_test,Y_test
 
 
 def generate_indexes(length):
@@ -199,15 +204,20 @@ def generator(x_train,y_train,input_shape,dataset_path,batch_size=32,augmentatio
         for i in range(0,(len(x_train)-batch_size),batch_size):
             current_indexes = indexes[i:i+batch_size]
             if augmentation:
-                imgs_shape = (len(current_indexes),)+input_shape
-                output_images = np.zeros(imgs_shape)
-                current_images = load_images(x_train[current_indexes],y_train[current_indexes],input_shape,dataset_path)
+                x = np.zeros((len(current_indexes),48,48,1))
+                current_images = x_train[current_indexes]
                 for index in range(len(current_indexes)):
-                    output_images[index] = datagenerator.random_transform(current_images[index])
-                output_images = output_images.astype(np.float32)/255
-                yield output_images,np.eye(7)[y_train[current_indexes]]
+                    x[index] = datagenerator.random_transform(current_images[index])
+                x = x.astype(np.float32)/255
+                y = y_train[current_indexes]
+                y = np.eye(2)[y]
+                yield x,y
             else:
-                yield load_images(x_train[current_indexes],y_train,input_shape,dataset_path).astype(np.float32)/255,np.eye(7)[y_train[current_indexes]]
+                y = y_train[current_indexes]
+                y = np.eye(2)[y]
+                x = x_train[current_indexes]
+                x = x.astype(np.float32)/255
+                yield x,y
 
 
 if __name__ == "__main__":
@@ -225,15 +235,15 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', default="dataset", type=str,
                         help="Path to dataset")
     parser.add_argument('--resume', default=False, type=bool,
-                        help="Resume model from previous state")
+                        help="Resume model from previous state")    
     
     args = parser.parse_args()
-    input_shape = (96,96,3)
-    model = CapsNet(input_shape,7,routings=3)
+    input_shape = (48,48,1)
+    model = CapsNet(input_shape,2,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
     if os.path.exists("models/last_weight.h5"):
-        print("loading model from last checkpoint.")
+        print("loading model from last checkpoint.")    
         model.load_weights("models/last_weight.h5")
 
     dataset_dir = args.dataset
@@ -247,6 +257,7 @@ if __name__ == "__main__":
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     x_test = x_test.astype(np.float32)/255
+    y_test = np.eye(2)[y_test]
     print(x_train.shape)
     print(x_test.shape)
     print(y_train.shape)
@@ -276,7 +287,7 @@ if __name__ == "__main__":
 
 
     model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-                        steps_per_epoch=100,
+                        steps_per_epoch=200,
                         epochs=REMAINING_EPOCHS,
                         callbacks=[customCheckPoint],
                         validation_data=[x_test, y_test])
