@@ -214,16 +214,23 @@ def generator(x_train,y_train,input_shape,dataset_path,batch_size=32,augmentatio
         for i in range(0,(len(x_train)-batch_size),batch_size):
             current_indexes = indexes[i:i+batch_size]
             if augmentation:
-                imgs_shape = (len(current_indexes),)+input_shape
-                output_images = np.zeros(imgs_shape)
-                current_images = load_images(x_train[current_indexes],y_train[current_indexes],input_shape,dataset_path)
+                # imgs_shape = (len(current_indexes),)+input_shape
+                # current_images = load_images(x_train[current_indexes],y_train[current_indexes],input_shape,dataset_path)
+                current_images = x_train[current_indexes]
+                output_images = np.zeros((current_images.shape))
                 for index in range(len(current_indexes)):
                     output_images[index] = datagenerator.random_transform(current_images[index])
+                y = y_train[current_indexes]
+                y = np.eye(7)[y]
                 output_images = output_images.astype(np.float32)/255
-                yield output_images,np.eye(7)[y_train[current_indexes]]
+                yield output_images,y
             else:
-                yield load_images(x_train[current_indexes],y_train,input_shape,dataset_path).astype(np.float32)/255,np.eye(7)[y_train[current_indexes]]
-
+                output_images = x_train[current_indexes]
+                
+                y = y_train[current_indexes]
+                y = np.eye(7)[y]
+                output_images = output_images.astype(np.float32)/255
+                yield output_images,y
 
 if __name__ == "__main__":
     import os
@@ -265,7 +272,7 @@ if __name__ == "__main__":
     x_train = x_train.astype(np.float32)/255
     x_test = x_test.astype(np.float32)/255
 
-    y_train = np.eye(7)[y_train]
+    # y_train = np.eye(7)[y_train]
     y_test = np.eye(7)[y_test]
     print ("x_train",x_train.shape)
     print ("x_test",x_test.shape)
