@@ -193,7 +193,7 @@ def load_dataset(input_shape,dataset_dir):
         for im_file in os.listdir(os.path.join(dataset_dir,em_dir)):
             img = cv2.imread(os.path.join(dataset_dir,em_dir,im_file))
             if not (img is None):
-                if len(img.shape)>2 and self.input_shape[2]==1:
+                if len(img.shape)>2 and input_shape[2]==1:
                     img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img,(input_shape[0],input_shape[1]))
                 X+=[img]
