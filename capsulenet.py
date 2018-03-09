@@ -216,10 +216,10 @@ def generator(x_train,y_train,input_shape,dataset_path,batch_size=32,augmentatio
             if augmentation:
                 # imgs_shape = (len(current_indexes),)+input_shape
                 # current_images = load_images(x_train[current_indexes],y_train[current_indexes],input_shape,dataset_path)
-                current_images = x_train[current_indexes]
-                output_images = np.zeros((current_images.shape))
+                # current_images = x_train[current_indexes]
+                output_images = np.zeros((len(current_indexes),input_shape[0],input_shape[1],input_shape[2]))
                 for index in range(len(current_indexes)):
-                    output_images[index] = datagenerator.random_transform(current_images[index])
+                    output_images[index] = datagenerator.random_transform(x_train[current_indexes[index]])
                 y = y_train[current_indexes]
                 y = np.eye(7)[y]
                 output_images = output_images.astype(np.float32)/255
