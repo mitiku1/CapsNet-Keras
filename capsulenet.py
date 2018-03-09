@@ -31,7 +31,7 @@ EMOTIONS= {
     6: "neutral"
 }
 
-datagenerator = ImageDataGenerator(rotation_range=0.3,
+datagenerator = ImageDataGenerator(rotation_range=20,
                         horizontal_flip=True,width_shift_range=0.2,
                         height_shift_range=0.2,
                         shear_range= 0.2,
@@ -295,12 +295,12 @@ if __name__ == "__main__":
         logfile.write(str_date+"\n")
 
 
-    # model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
-    #                     steps_per_epoch=1000,
-    #                     epochs=REMAINING_EPOCHS,
-    #                     callbacks=[customCheckPoint],
-    #                     validation_data=[x_test, y_test])
-    model.fit(x_train,y_train,batch_size = 32,epochs=10,callbacks=[customCheckPoint],validation_data=[x_test,y_test])
+    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
+                        steps_per_epoch=1000,
+                        epochs=REMAINING_EPOCHS,
+                        callbacks=[customCheckPoint],
+                        validation_data=[x_test, y_test])
+    # model.fit(x_train,y_train,batch_size = 32,epochs=10,callbacks=[customCheckPoint],validation_data=[x_test,y_test])
     model.save_weights("result/model.h5")
     model_json = model.to_json()
     with open("result/model.json","w+") as f0:
