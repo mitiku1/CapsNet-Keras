@@ -157,7 +157,7 @@ def load_images(x,y,input_shape,dataset_path):
         if len(img.shape)>2:
             img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(input_shape[0],input_shape[1]))
-        img = cv2.cvtColor(cv2.ColOR_BGR2GRAY)
+        img = cv2.cvtColor(img,cv2.ColOR_BGR2GRAY)
         img = img.reshape(input_shape)
         output[i] = img
     output = output.astype(np.float32)
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     
 
     args = parser.parse_args()
-    input_shape = (256,256,1)
+    input_shape = (96,96,1)
     model = CapsNet(input_shape,7,routings=3)
     model.summary()
     model.compile(loss=margin_loss,optimizer=keras.optimizers.Adam(args.lr),metrics=['accuracy'])
