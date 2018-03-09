@@ -222,14 +222,14 @@ def generator(x_train,y_train,input_shape,dataset_path,batch_size=32,augmentatio
                     output_images[index] = datagenerator.random_transform(x_train[current_indexes[index]])
                 y = y_train[current_indexes]
                 y = np.eye(7)[y]
-                output_images = output_images.astype(np.float32)/255
+                output_images = output_images.astype(np.float32)
                 yield output_images,y
             else:
                 output_images = x_train[current_indexes]
                 
                 y = y_train[current_indexes]
                 y = np.eye(7)[y]
-                output_images = output_images.astype(np.float32)/255
+                output_images = output_images.astype(np.float32)
                 yield output_images,y
 
 if __name__ == "__main__":
@@ -302,7 +302,7 @@ if __name__ == "__main__":
         logfile.write(str_date+"\n")
 
 
-    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size),
+    model.fit_generator(generator=generator(x_train, y_train,input_shape,dataset_dir+"/train", args.batch_size,augmentation=False),
                         steps_per_epoch=1000,
                         epochs=REMAINING_EPOCHS,
                         callbacks=[customCheckPoint],
