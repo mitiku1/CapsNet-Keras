@@ -154,10 +154,9 @@ def load_images(x,y,input_shape,dataset_path):
             print("Error", os.path.join(dataset_path,class_to_label(y[i]),x[i]))       
         if img is None:
             print("Couldnot read image from ",os.path.join(dataset_path,class_to_label(y[i]),x[i]))
-        if len(img.shape)>2:
+        if len(img.shape)>2 and self.input_shape[2]==1:
             img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(input_shape[0],input_shape[1]))
-        img = cv2.cvtColor(img,cv2.ColOR_BGR2GRAY)
         img = img.reshape(input_shape)
         output[i] = img
     output = output.astype(np.float32)
@@ -194,6 +193,8 @@ def load_dataset(input_shape,dataset_dir):
         for im_file in os.listdir(os.path.join(dataset_dir,em_dir)):
             img = cv2.imread(os.path.join(dataset_dir,em_dir,im_file))
             if not (img is None):
+                if len(img.shape)>2 and self.input_shape[2]==1:
+                    img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
                 img = cv2.resize(img,(input_shape[0],input_shape[1]))
                 X+=[img]
                 Y+=[label_to_class(em_dir)]
